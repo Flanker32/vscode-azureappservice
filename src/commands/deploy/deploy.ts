@@ -40,8 +40,9 @@ export async function deploy(actionContext: IActionContext, arg1?: vscode.Uri | 
     }
 
     const fileExtensions: string | string[] | undefined = await javaUtils.getJavaFileExtensions(siteConfig);
+    const pathOptions: string[] | undefined = await javaUtils.getArtifactsByFileExtensions(fileExtensions);
 
-    const deployPaths: IDeployPaths = await getDeployFsPath(actionContext, arg1, fileExtensions);
+    const deployPaths: IDeployPaths = await getDeployFsPath(actionContext, arg1, fileExtensions, pathOptions);
     const context: IDeployContext = Object.assign(actionContext, deployPaths, { defaultAppSetting: constants.configurationSettings.defaultWebAppToDeploy, isNewApp });
 
     // because this is workspace dependant, do it before user selects app

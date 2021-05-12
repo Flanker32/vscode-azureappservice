@@ -7,11 +7,12 @@ import { WebSiteManagementModels } from "@azure/arm-appservice";
 import { SiteConfigResource } from "@azure/arm-appservice/esm/models";
 import * as fse from 'fs-extra';
 import * as path from 'path';
-import { workspace } from "vscode";
+import { workspace, WorkspaceFolder } from "vscode";
 import { UserCancelledError } from 'vscode-azureextensionui';
 import { SiteTreeItem } from "../explorer/SiteTreeItem";
 import { ext } from '../extensionVariables';
 import { localize } from "../localize";
+import { findFilesByFileExtension } from "./workspace";
 
 export namespace javaUtils {
     const DEFAULT_PORT: string = '8080';
@@ -110,6 +111,19 @@ export namespace javaUtils {
             return ['war'];
         } else if (await isJavaProject()) {
             return getJavaArtifactExtensions();
+        }
+        return;
+    }
+
+    export async function getArtifactsByFileExtensions(fileExtensions: string[] | undefined): Promise<string[] | undefined> {
+        if (fileExtensions) {
+            const workspaceFolder: WorkspaceFolder | undefined = workspace.workspaceFolders && workspace.workspaceFolders.length === 1 ? workspace.workspaceFolders[0] : undefined;
+            const targetFolder: string | undefined = workspaceFolder ? path.join(workspaceFolder?.uri.fsPath, "target") : undefined;
+            const javaArtifactPath: string | undefined = targetFolder && await fse.pathExists(targetFolder) ? targetFolder : undefined;
+            // If there is a target folder, only check the folder for the file extension, otherwise use all currently opened workspaces
+            return (await Promise.all(fileExtensions.map(async ext => await findFilesByFileExtension(javaArtifactPath, ext))))
+                .reduce((acc, val) => acc.concat(val), [])
+                .map(uri => uri.fsPath);
         }
         return;
     }
